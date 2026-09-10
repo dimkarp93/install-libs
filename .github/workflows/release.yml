@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: ver
+        run: |
+          if [ ! -f versions.txt ]; then
+            echo "versions.txt not found" >&2
+            exit 1
+          fi
+          v=$(tr -d '[:space:]' < versions.txt)
+          if ! echo "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "versions.txt must contain semver X.Y.Z (got: '$v')" >&2
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "tag=v$v"    >> "$GITHUB_OUTPUT"
+
+      - name: Check tag existence
+        id: tagcheck
+        run: |
+          if git rev-parse "refs/tags/${{ steps.ver.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Tag ${{ steps.ver.outputs.tag }} already exists - skipping the release"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Go
+        if: steps.tagcheck.outputs.exists == 'false'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run tests
+        if: steps.tagcheck.outputs.exists == 'false'
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Create release
+        if: steps.tagcheck.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.ver.outputs.tag }}" \
+            --title "${{ steps.ver.outputs.tag }}" \
+            --target "${{ github.sha }}" \
+            --notes "Automated release ${{ steps.ver.outputs.tag }} from versions.txt"
