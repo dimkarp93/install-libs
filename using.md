@@ -1,10 +1,10 @@
-# Кто использует install-libs
+# Who uses install-libs
 
-Проекты, которые импортируют `github.com/dimkarp93/install-libs/buildinfo` — через него
-реализованы флаги `--version`, `--origin` и `--buildinfo` из
+Projects that import `github.com/dimkarp93/install-libs/buildinfo` — it is how they implement
+the `--version`, `--origin` and `--buildinfo` flags from
 [CONVENTIONS.md](https://github.com/dimkarp93/install/blob/master/CONVENTIONS.md).
 
-| Проект | Репозиторий | Модуль | Где подключено |
+| Project | Repository | Module | Where it is wired in |
 |---|---|---|---|
 | md-pdf | [dimkarp93/md-pdf](https://github.com/dimkarp93/md-pdf) | `github.com/dimkarp93/md-pdf` | `cmd/md-pdf/main.go` |
 | md-docx | [dimkarp93/md-docx](https://github.com/dimkarp93/md-docx) | `github.com/dimkarp93/md-docx` | `cmd/md-docx/main.go` |
@@ -16,28 +16,28 @@
 | duty | [dimkarp93/duty](https://github.com/dimkarp93/duty) | `github.com/dimkarp93/duty` | `main.go` |
 | rcopy | [rcopy/rcopy](https://github.com/rcopy/rcopy) | `github.com/rcopy/rcopy` | `cmd/rcopy/main.go`, `internal/cli/root.go` |
 
-## Способы подключения
+## Ways of wiring it in
 
-- **`Info.Handle(os.Args[1:])`** — тулзы с ручным разбором аргументов: git-remote-gz, mvpy-env,
-  mono-vcs, repos, duty, kdbx-env (внутри `cmd.Execute`).
-- **Отдельные флаги `flag.Bool`** + `VersionString()` / `OriginString()` / `Print()` — тулзы на
-  пакете `flag`: md-pdf, md-docx.
-- **cobra** — `cmd.Version = info.VersionString()` с `SetVersionTemplate("{{.Version}}\n")`
-  плюс флаги `--origin` / `--buildinfo`: rcopy.
+- **`Info.Handle(os.Args[1:])`** — tools with manual argument parsing: git-remote-gz, mvpy-env,
+  mono-vcs, repos, duty, kdbx-env (inside `cmd.Execute`).
+- **Separate `flag.Bool` flags** + `VersionString()` / `OriginString()` / `Print()` — tools
+  built on the `flag` package: md-pdf, md-docx.
+- **cobra** — `cmd.Version = info.VersionString()` with `SetVersionTemplate("{{.Version}}\n")`
+  plus the `--origin` / `--buildinfo` flags: rcopy.
 
-## Примечания
+## Notes
 
-- **duty** — репозиторий пока только локальный, remote не настроен; ссылка указывает на путь
-  из `go.mod`, куда проект и должен уехать.
-- **git-remote-gz** и **kdbx-env** живут ещё и в Gitea-зеркале, поэтому у них есть
-  `upstream.txt`: в релизах оттуда `origin` указывает на зеркало, а `upstream` — на GitHub.
-- **[dimkarp93/remote](https://github.com/dimkarp93/remote)** соответствует тем же конвенциям,
-  но библиотеку не подключает: это POSIX-shell тулза, значения подставляются в скрипт при
-  сборке.
+- **duty** — the repository is still local only, no remote is configured; the link points at
+  the path from `go.mod`, which is where the project is meant to end up.
+- **git-remote-gz** and **kdbx-env** also live in a Gitea mirror, which is why they have an
+  `upstream.txt`: in releases made there `origin` points at the mirror and `upstream` at GitHub.
+- **[dimkarp93/remote](https://github.com/dimkarp93/remote)** follows the same conventions but
+  does not use the library: it is a POSIX shell tool, and the values are substituted into the
+  script at build time.
 
-## Обновление списка
+## Updating the list
 
-Найти всех потребителей в рабочих копиях:
+Find every consumer in the local working copies:
 
 ```sh
 grep -rl 'install-libs/buildinfo' ~/tools ~/program --include='*.go'

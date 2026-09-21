@@ -1,29 +1,30 @@
 # install-libs
 
-Общая часть требований [CONVENTIONS.md](https://github.com/dimkarp93/install) — версия и
-происхождение сборки — в виде Go-библиотеки.
+The shared part of the [CONVENTIONS.md](https://github.com/dimkarp93/install) requirements —
+build version and origin — packaged as a Go library.
 
-Модуль: `github.com/dimkarp93/install-libs`.
+Module: `github.com/dimkarp93/install-libs`.
 
-## Зачем
+## Why
 
-Конвенции требуют от каждой installable-программы одинакового поведения:
+The conventions require identical behaviour from every installable program:
 
-- `--version` печатает голый semver без префикса `v`;
-- `--origin` печатает канонический URL репозитория, из которого собран бинарь;
-- `--buildinfo` печатает `key=value` в фиксированном порядке
+- `--version` prints a bare semver without the `v` prefix;
+- `--origin` prints the canonical URL of the repository the binary was built from;
+- `--buildinfo` prints `key=value` in the fixed order
   `origin`, `upstream`, `version`, `commit`, `channel`;
-- при сборке через `go install` (без `-ldflags`) версия и origin берутся из метаданных модуля.
+- when built through `go install` (without `-ldflags`), the version and the origin are taken
+  from the module metadata.
 
-Пакет `buildinfo` реализует это один раз, вместо копирования одного и того же кода
-в каждую тулзу.
+The `buildinfo` package implements this once, instead of copying the same code into every
+tool.
 
-Список проектов, которые её подключают, — в [using.md](using.md).
+The list of projects that depend on it is in [using.md](using.md).
 
-## Использование
+## Usage
 
-Значения по-прежнему зашиваются в `package main` — так требуют конвенции и релизные
-workflow (`-X main.version=...` и далее):
+The values are still baked into `package main` — that is what the conventions and the release
+workflows require (`-X main.version=...` and so on):
 
 ```go
 package main
@@ -52,43 +53,47 @@ func main() {
 	if build().Handle(os.Args[1:]) {
 		return
 	}
-	// обычная работа программы
+	// the program's normal work
 }
 ```
 
-`Handle` разбирает `--version`, `-v`, `--origin`, `--buildinfo` и подкоманду `version`
-(только первым аргументом), печатает результат в stdout и возвращает `true`, если аргумент был
-обработан. Разбор останавливается на разделителе `--` и на первом аргументе, не похожем на
-флаг, поэтому флаги дочерней команды (`kdbx-env run -- app --version`, `mono-vcs do git
---version`) не перехватываются.
+`Handle` parses `--version`, `-v`, `--origin`, `--buildinfo` and the `version` subcommand
+(only as the first argument), prints the result to stdout and returns `true` if the argument
+was handled. Parsing stops at the `--` separator and at the first argument that does not look
+like a flag, so the flags of a child command (`kdbx-env run -- app --version`, `mono-vcs do git
+--version`) are not intercepted.
 
-Когда нужен не весь разбор, а отдельные значения:
+When you need individual values rather than the whole parsing:
 
 ```go
 info := build()
-info.VersionString()   // "0.4.0", либо версия модуля при go install, либо "dev"
-info.OriginString()    // канонический https://host/owner/name
-info.UpstreamString()  // upstream.txt, иначе origin
-info.Lines()           // []string для --buildinfo
-info.Fprint(w)         // те же строки в произвольный io.Writer
+info.VersionString()   // "0.4.0", or the module version under go install, or "dev"
+info.OriginString()    // the canonical https://host/owner/name
+info.UpstreamString()  // upstream.txt, otherwise origin
+info.Lines()           // []string for --buildinfo
+info.Fprint(w)         // the same lines into an arbitrary io.Writer
 ```
 
-`buildinfo.NormalizeURL` приводит URL к канонической форме (срезает user info, `.git`,
-конечный слэш, превращает ssh-форму в https) — это же делает и `OriginString`, так что
-токен из `git remote get-url origin` не утечёт в релизный бинарь.
+`buildinfo.NormalizeURL` brings a URL to its canonical form (strips the user info, `.git` and
+the trailing slash, turns the ssh form into https) — `OriginString` does the same, so a token
+from `git remote get-url origin` does not leak into a release binary.
 
-Константы каналов: `ChannelLocal`, `ChannelGoInstall`, `ChannelGithubRelease`,
+Channel constants: `ChannelLocal`, `ChannelGoInstall`, `ChannelGithubRelease`,
 `ChannelGiteaRelease`.
 
-## Сборка
+## Build
 
 ```sh
 make check        # go vet + go test
 make bump-patch   # 1.2.3 -> 1.2.4
 ```
 
-Версия — в `versions.txt`; релиз создаётся workflow'ом по semver-тегу и нужен только для
-`go get` (архивов у библиотеки нет).
+The version lives in `versions.txt`; the release is created by the workflow from a semver tag
+and is only needed for `go get` (the library ships no archives).
 
-`make pack` собирает file-based Go-прокси `dist/install-libs-<version>-proxy.tar.gz` —
-способ подключить модуль в потребителях до того, как он опубликован.
+`make pack` builds a file-based Go proxy `dist/install-libs-<version>-proxy.tar.gz` — a way to
+wire the module into consumers before it is published.
+
+## License
+
+[MIT](LICENSE)

@@ -18,13 +18,13 @@ test-v:
 	go test -v ./...
 
 test-run:
-	@test -n "$(T)" || { echo "укажите тест: make test-run T=TestNormalizeURL"; exit 1; }
+	@test -n "$(T)" || { echo "specify a test: make test-run T=TestNormalizeURL"; exit 1; }
 	go test -v -run '$(T)' ./...
 
 cover:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out | tail -1
-	@echo "детальный отчёт: go tool cover -html=coverage.out"
+	@echo "detailed report: go tool cover -html=coverage.out"
 
 vet:
 	go vet ./...
@@ -45,9 +45,9 @@ pack: build test
 	rm -rf $(DIST)/stage
 	tar -czf $(DIST)/$(NAME)-$(VERSION)-proxy.tar.gz -C $(DIST) proxy
 	@echo
-	@echo "Пакет: $(DIST)/$(NAME)-$(VERSION)-proxy.tar.gz  ($(MODULE) $(TAG))"
+	@echo "Package: $(DIST)/$(NAME)-$(VERSION)-proxy.tar.gz  ($(MODULE) $(TAG))"
 	@echo
-	@echo "Использование до публикации модуля:"
+	@echo "How to use it before the module is published:"
 	@echo "  tar -xzf $(NAME)-$(VERSION)-proxy.tar.gz -C /opt"
 	@echo "  GOFLAGS=-mod=mod GOPROXY=file:///opt/proxy,https://proxy.golang.org,direct \\"
 	@echo "  GONOSUMDB='github.com/dimkarp93/*' GONOSUMCHECK=1 GOSUMDB=off go build ./..."
