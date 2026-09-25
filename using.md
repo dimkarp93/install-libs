@@ -16,6 +16,11 @@ the `--version`, `--origin` and `--buildinfo` flags from
 | duty | [dimkarp93/duty](https://github.com/dimkarp93/duty) | `github.com/dimkarp93/duty` | `main.go` |
 | rcopy | [rcopy/rcopy](https://github.com/rcopy/rcopy) | `github.com/rcopy/rcopy` | `cmd/rcopy/main.go`, `internal/cli/root.go` |
 
+## Other packages
+
+| Package | Project | Where it is wired in |
+|---|---|---|
+
 ## Ways of wiring it in
 
 - **`Info.Handle(os.Args[1:])`** — tools with manual argument parsing: git-remote-gz, mvpy-env,
@@ -41,4 +46,5 @@ Find every consumer in the local working copies:
 
 ```sh
 grep -rl 'install-libs/buildinfo' ~/tools ~/program --include='*.go'
+grep -rlE 'install-libs/(xdgpath|envflag|shellcomplete)' ~/tools ~/program --include='*.go' | grep -v /vendor/
 ```
