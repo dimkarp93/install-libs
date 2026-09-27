@@ -1,8 +1,9 @@
-package xdgpath
+package pathreport
 
 import (
 	"fmt"
 	"io"
+	"os"
 )
 
 const PathFlag = "--path"
@@ -16,7 +17,7 @@ type Paths struct {
 	entries []Entry
 }
 
-func NewPaths(entries ...Entry) *Paths {
+func New(entries ...Entry) *Paths {
 	return &Paths{entries: entries}
 }
 
@@ -44,4 +45,9 @@ func (p *Paths) HandlePath(w io.Writer, args []string) bool {
 	}
 	p.Fprint(w)
 	return true
+}
+
+func exists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
 }

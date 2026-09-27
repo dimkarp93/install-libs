@@ -1,4 +1,4 @@
-package xdgpath
+package pathreport
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ func TestPathsReport(t *testing.T) {
 	}
 	missing := filepath.Join(dir, "state.json")
 
-	p := NewPaths(
+	p := New(
 		Entry{Name: "config", Path: present},
 		Entry{Name: "state", Path: missing},
 	)
@@ -30,7 +30,7 @@ func TestPathsReport(t *testing.T) {
 }
 
 func TestPathsHandlePath(t *testing.T) {
-	p := NewPaths(Entry{Name: "config", Path: "/x"})
+	p := New(Entry{Name: "config", Path: "/x"})
 	var buf bytes.Buffer
 	if !p.HandlePath(&buf, []string{"--path"}) {
 		t.Fatal("--path not handled")

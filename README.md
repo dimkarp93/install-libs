@@ -9,6 +9,7 @@ packaged as a Go library.
 | `buildinfo` | `--version`, `--origin`, `--buildinfo` |
 | `xdgpath` | config and data paths under the XDG base directories |
 | `envflag` | options set by a flag or an environment variable, with the `--envs` report |
+| `pathreport` | every path a tool touches, behind a standard `--path` flag |
 | `shellcomplete` | bash/zsh completion: `completion`, `install-completions`, `__complete` |
 
 Module: `github.com/dimkarp93/install-libs`.
@@ -107,13 +108,17 @@ xdgpath.WithLegacy(path, old)     // path if it exists, otherwise the first exis
 `~/.config/<app>` to `ConfigDir`: if `XDG_CONFIG_HOME` points elsewhere and the new file does
 not exist yet, the old one is used.
 
-`xdgpath.Paths` lists every path a tool actually touches (config, state, key stores, ...) behind
-a standard `--path` flag:
+## pathreport
+
+Lists every path a tool actually touches — config, state, key stores, whatever the tool itself
+knows about, XDG-resolved or not — behind a standard `--path` flag. A separate package from
+`xdgpath`: the paths it reports are not necessarily XDG paths (a key store or a secrets
+directory usually is not).
 
 ```go
-paths := xdgpath.NewPaths(
-	xdgpath.Entry{Name: "config", Path: config.Path()},
-	xdgpath.Entry{Name: "state", Path: statePath()},
+paths := pathreport.New(
+	pathreport.Entry{Name: "config", Path: config.Path()},
+	pathreport.Entry{Name: "state", Path: statePath()},
 )
 if paths.HandlePath(os.Stdout, os.Args[1:]) {
 	return

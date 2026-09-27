@@ -46,5 +46,5 @@ Find every consumer in the local working copies:
 
 ```sh
 grep -rl 'install-libs/buildinfo' ~/tools ~/program --include='*.go'
-grep -rlE 'install-libs/(xdgpath|envflag|shellcomplete)' ~/tools ~/program --include='*.go' | grep -v /vendor/
+grep -rlE 'install-libs/(xdgpath|envflag|pathreport|shellcomplete)' ~/tools ~/program --include='*.go' | grep -v /vendor/
 ```
