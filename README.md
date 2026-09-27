@@ -107,6 +107,24 @@ xdgpath.WithLegacy(path, old)     // path if it exists, otherwise the first exis
 `~/.config/<app>` to `ConfigDir`: if `XDG_CONFIG_HOME` points elsewhere and the new file does
 not exist yet, the old one is used.
 
+`xdgpath.Paths` lists every path a tool actually touches (config, state, key stores, ...) behind
+a standard `--path` flag:
+
+```go
+paths := xdgpath.NewPaths(
+	xdgpath.Entry{Name: "config", Path: config.Path()},
+	xdgpath.Entry{Name: "state", Path: statePath()},
+)
+if paths.HandlePath(os.Stdout, os.Args[1:]) {
+	return
+}
+```
+
+`--path` (only as the first argument) prints one `name: /resolved/path (found|not found)` line
+per entry, in the order given. A tool with its own richer path report (grouped, with globs, ...)
+keeps that under a different flag, such as `--path-rich`, the way `ai-quota` does — `--path`
+stays the same lightweight shape everywhere.
+
 ## envflag
 
 Options that can be set by a flag or by an environment variable, with the priority
