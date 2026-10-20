@@ -193,7 +193,9 @@ if code, ok := spec.Handle(os.Stdout, os.Stderr, os.Args[1:]); ok {
 - `uninstall-completions` removes the files and the marked line;
 - `__complete <words...>` is what the script calls on every TAB: it prints the candidates one
   per line, or one of the directives `:none` (nothing), `:dirs` (directories), `:default`
-  (file names).
+  (file names), `:command` followed by a line with the index of the wrapped command's first
+  word among the `__complete` arguments (the shell completes that command as if the line
+  started with it).
 
 Describing the tree:
 
@@ -207,6 +209,12 @@ Describing the tree:
   first one, `Anything` for file names.
 - Flags stop at the first positional argument, as in the `flag` package, unless `Intermixed`
   is set; after `--` only positional arguments are completed.
+- `Spec.CommandAfterDash` is for wrappers like `tool [flags] -- <cmd> [args...]`: after the
+  top-level `--` the shell completes `<cmd>` itself — command names from `PATH`, then that
+  command's own completion (zsh: `_normal`; bash: `_comp_command_offset`/`_command_offset` from
+  bash-completion, without it command names and file names).
+- bash splits words on `:` (`COMP_WORDBREAKS`); `__complete` joins `a`, `:`, `b` back into
+  `a:b`, so values like `name:ENV` do not break the parsing.
 - A tool without subcommands leaves `Commands` empty and sets `Spec.Args`.
 
 ## Build
