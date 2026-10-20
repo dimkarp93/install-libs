@@ -109,6 +109,36 @@ func TestCompleteAfterDoubleDash(t *testing.T) {
 	}
 }
 
+func TestJoinColons(t *testing.T) {
+	cases := []struct {
+		words []string
+		want  []string
+	}{
+		{[]string{"--secrets", "a", ":", "B", "--", ""}, []string{"--secrets", "a:B", "--", ""}},
+		{[]string{"x", "::", "y"}, []string{"x::y"}},
+		{[]string{"a", ":", "--", "ls"}, []string{"a:", "--", "ls"}},
+		{[]string{"--", ":", "ls"}, []string{"--", ":", "ls"}},
+		{[]string{"--secrets", ":"}, []string{"--secrets", ":"}},
+	}
+	for _, c := range cases {
+		if got := joinColons(c.words); !slices.Equal(got, c.want) {
+			t.Errorf("%q: got %q, want %q", c.words, got, c.want)
+		}
+	}
+}
+
+func TestCompleteColonValue(t *testing.T) {
+	s := Spec{
+		Bin:      "kdbx",
+		Flags:    []Flag{{Name: "--secrets"}},
+		Args:     Anything,
+		Commands: []Command{{Name: "show"}},
+	}
+	if got := s.Complete([]string{"--secrets", "=", "a", ":", "B", "--", ""}); !slices.Equal(got, []string{DirDefault}) {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestFromFlagSet(t *testing.T) {
 	fs := flag.NewFlagSet("x", flag.ContinueOnError)
 	fs.Bool("b", false, "")
