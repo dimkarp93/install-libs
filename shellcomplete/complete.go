@@ -2,6 +2,7 @@ package shellcomplete
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -42,11 +43,12 @@ type Command struct {
 }
 
 type Spec struct {
-	Bin        string
-	Flags      []Flag
-	Args       func(pos int) []string
-	Intermixed bool
-	Commands   []Command
+	Bin              string
+	Flags            []Flag
+	Args             func(pos int) []string
+	Intermixed       bool
+	Commands         []Command
+	CommandAfterDash bool
 }
 
 func Static(items ...string) func() []string {
@@ -89,6 +91,7 @@ func (s Spec) lookup(name string) (Command, bool) {
 }
 
 func (s Spec) Complete(words []string) []string {
+	raw := words
 	words = joinColons(joinEquals(words))
 	if len(words) == 0 {
 		words = []string{""}
@@ -99,6 +102,9 @@ func (s Spec) Complete(words []string) []string {
 	root := Command{Flags: s.Flags, Args: s.Args, Intermixed: s.Intermixed}
 	sc := scan(root.Flags, done, false)
 	if sc.dashed {
+		if s.CommandAfterDash {
+			return commandOffset(raw, done, sc.dash)
+		}
 		return complete(root, done, cur)
 	}
 	if len(sc.free) > 0 {
@@ -125,7 +131,32 @@ func (s Spec) Complete(words []string) []string {
 }
 
 func commandOffset(raw, done []string, dash int) []string {
-	panic("not implemented")
+	ordinal := countDashes(done[:dash])
+	start := nthDash(raw, ordinal) + 1
+	return []string{DirCommand, strconv.Itoa(start)}
+}
+
+func countDashes(words []string) int {
+	n := 0
+	for _, w := range words {
+		if w == "--" {
+			n++
+		}
+	}
+	return n
+}
+
+func nthDash(words []string, n int) int {
+	for i, w := range words {
+		if w != "--" {
+			continue
+		}
+		if n == 0 {
+			return i
+		}
+		n--
+	}
+	return -1
 }
 
 func complete(c Command, rest []string, cur string) []string {
@@ -204,12 +235,13 @@ type scanned struct {
 	stopped bool
 	dashed  bool
 	first   int
+	dash    int
 }
 
 func scan(flags []Flag, args []string, intermixed bool) scanned {
 	var free []string
 	stopped, dashed := false, false
-	first := -1
+	first, dash := -1, -1
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if stopped {
@@ -218,6 +250,7 @@ func scan(flags []Flag, args []string, intermixed bool) scanned {
 		}
 		if arg == "--" {
 			stopped, dashed = true, true
+			dash = i
 			continue
 		}
 		if isFlagWord(arg) {
@@ -236,7 +269,13 @@ func scan(flags []Flag, args []string, intermixed bool) scanned {
 			stopped = true
 		}
 	}
-	return scanned{free: free, stopped: stopped, dashed: dashed, first: first}
+	return scanned{
+		free:    free,
+		stopped: stopped,
+		dashed:  dashed,
+		first:   first,
+		dash:    dash,
+	}
 }
 
 func find(flags []Flag, word string) (Flag, bool) {
