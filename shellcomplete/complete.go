@@ -11,6 +11,7 @@ const (
 	DirNone    = ":none"
 	DirDirs    = ":dirs"
 	DirDefault = ":default"
+	DirCommand = ":command"
 )
 
 const (
@@ -121,6 +122,10 @@ func (s Spec) Complete(words []string) []string {
 		return filter(names, cur)
 	}
 	return complete(root, done, cur)
+}
+
+func commandOffset(raw, done []string, dash int) []string {
+	panic("not implemented")
 }
 
 func complete(c Command, rest []string, cur string) []string {
