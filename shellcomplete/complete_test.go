@@ -139,6 +139,33 @@ func TestCompleteColonValue(t *testing.T) {
 	}
 }
 
+func TestCompleteCommandAfterDash(t *testing.T) {
+	s := Spec{
+		Bin:              "kdbx",
+		Flags:            []Flag{{Name: "--secrets"}, {Name: "--dry-run", Bool: true}},
+		Args:             Anything,
+		Commands:         []Command{{Name: "show"}},
+		CommandAfterDash: true,
+	}
+	cases := []struct {
+		words []string
+		want  []string
+	}{
+		{[]string{"--", ""}, []string{DirCommand, "1"}},
+		{[]string{"--secrets", "a", "--", "gi"}, []string{DirCommand, "3"}},
+		{[]string{"--dry-run", "--", "git", "ch"}, []string{DirCommand, "2"}},
+		{[]string{"--secrets", "=", "a", ":", "B", "--", "git", ""}, []string{DirCommand, "6"}},
+		{[]string{"--secrets", "--", "--", "ls", ""}, []string{DirCommand, "3"}},
+		{[]string{"--", "env", "--", ""}, []string{DirCommand, "1"}},
+		{[]string{"sh"}, []string{"show"}},
+	}
+	for _, c := range cases {
+		if got := s.Complete(c.words); !slices.Equal(got, c.want) {
+			t.Errorf("%q: got %q, want %q", c.words, got, c.want)
+		}
+	}
+}
+
 func TestFromFlagSet(t *testing.T) {
 	fs := flag.NewFlagSet("x", flag.ContinueOnError)
 	fs.Bool("b", false, "")
