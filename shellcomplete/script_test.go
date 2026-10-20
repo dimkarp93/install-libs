@@ -2,6 +2,7 @@ package shellcomplete
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,7 +17,7 @@ func TestScripts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, want := range []string{"my-tool " + CompleteCommand, DirNone, DirDirs, DirDefault} {
+		for _, want := range []string{"my-tool " + CompleteCommand, DirNone, DirDirs, DirDefault, DirCommand} {
 			if !strings.Contains(script, want) {
 				t.Errorf("%s: no %q", sh, want)
 			}
@@ -75,6 +76,77 @@ printf '%s|' "${COMPREPLY[@]}"
 	if got := string(out); got != "2:sync |second|" {
 		t.Fatalf("got %q", got)
 	}
+}
+
+type delegation struct {
+	name  string
+	setup string
+	words string
+	cword int
+	want  string
+}
+
+const fakeDelegatingTool = "#!/bin/sh\nprintf ':command\\n1\\n'\n"
+
+const delegationRun = `%s
+%s
+COMP_WORDS=%s
+COMP_CWORD=%d
+_my_tool
+printf '%%s|' "${COMPREPLY[@]}"
+`
+
+func TestBashScriptDelegates(t *testing.T) {
+	if _, err := exec.LookPath("bash"); err != nil {
+		t.Skip("no bash")
+	}
+	for _, c := range delegationCases() {
+		t.Run(c.name, func(t *testing.T) {
+			if got := runDelegation(t, c); got != c.want {
+				t.Fatalf("got %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+func delegationCases() []delegation {
+	return []delegation{
+		{
+			name:  "bash-completion",
+			setup: `_command_offset() { COMPREPLY=("offset:$1"); }`,
+			words: `(my-tool -- git "")`,
+			cword: 3,
+			want:  "offset:2|",
+		},
+		{
+			name:  "command name",
+			words: `(my-tool -- my-to)`,
+			cword: 2,
+			want:  "my-tool|",
+		},
+	}
+}
+
+func runDelegation(t *testing.T, c delegation) string {
+	t.Helper()
+	dir := t.TempDir()
+	tool := filepath.Join(dir, "my-tool")
+	err := os.WriteFile(tool, []byte(fakeDelegatingTool), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	script := mustScript(t, Spec{Bin: "my-tool"}, "bash")
+	run := fmt.Sprintf(delegationRun, script, c.setup, c.words, c.cword)
+	cmd := exec.Command("bash", "--norc", "-c", run)
+	path := dir + ":" + os.Getenv("PATH")
+	cmd.Env = append(os.Environ(), "PATH="+path)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	return string(out)
 }
 
 func TestHandle(t *testing.T) {
