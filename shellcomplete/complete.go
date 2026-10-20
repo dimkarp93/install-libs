@@ -88,7 +88,7 @@ func (s Spec) lookup(name string) (Command, bool) {
 }
 
 func (s Spec) Complete(words []string) []string {
-	words = joinEquals(words)
+	words = joinColons(joinEquals(words))
 	if len(words) == 0 {
 		words = []string{""}
 	}
@@ -259,6 +259,33 @@ func joinEquals(words []string) []string {
 		out = append(out, w)
 	}
 	return out
+}
+
+func joinColons(words []string) []string {
+	out := make([]string, 0, len(words))
+	glue := false
+	for _, w := range words {
+		switch {
+		case isColons(w) && len(out) > 0 && isValueWord(out[len(out)-1]):
+			out[len(out)-1] += w
+			glue = true
+		case glue && isValueWord(w):
+			out[len(out)-1] += w
+			glue = false
+		default:
+			out = append(out, w)
+			glue = false
+		}
+	}
+	return out
+}
+
+func isColons(word string) bool {
+	return word != "" && strings.Trim(word, ":") == ""
+}
+
+func isValueWord(word string) bool {
+	return word != "--" && !isFlagWord(word)
 }
 
 func isFlagWord(arg string) bool {
